@@ -9,7 +9,7 @@ ParalonCloud rents whole GPU machines by the minute. A rental is a container wit
 
 ## Tools
 
-With the ParalonCloud MCP server (`@paraloncloud/mcp-rentals`) connected, use its tools:
+With the ParalonCloud MCP server (`@paraloncloud/mcp`) connected, use its tools:
 
 | Tool | Use |
 | --- | --- |

@@ -1,6 +1,6 @@
 # ParalonCloud skills for Claude Code
 
-A Claude Code plugin for [ParalonCloud](https://paraloncloud.com): three skills that teach the agent how to use ParalonCloud well, and the [ParalonCloud MCP server](https://github.com/ParalonCloud/mcp-rentals) that gives it the tools.
+A Claude Code plugin for [ParalonCloud](https://paraloncloud.com): three skills that teach the agent how to use ParalonCloud well, and the [ParalonCloud MCP server](https://github.com/ParalonCloud/paralon-mcp) that gives it the tools.
 
 | Skill | What the agent learns |
 | --- | --- |
@@ -44,7 +44,7 @@ The skills tell the agent to confirm before anything that costs money or changes
 
 ## Other clients
 
-The MCP server works in any MCP client (Claude Desktop, Cursor, ...): see [mcp-rentals](https://github.com/ParalonCloud/mcp-rentals). The skills are plain `SKILL.md` folders under `plugins/paraloncloud/skills/` and can be used wherever Agent Skills are supported.
+The MCP server works in any MCP client (Claude Desktop, Cursor, ...): see [paralon-mcp](https://github.com/ParalonCloud/paralon-mcp). The skills are plain `SKILL.md` folders under `plugins/paraloncloud/skills/` and can be used wherever Agent Skills are supported.
 
 ## Links
 

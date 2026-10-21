@@ -9,7 +9,7 @@ A **node** is a machine the user rents out through the ParalonCloud agent. Rente
 
 ## Tools
 
-With the ParalonCloud MCP server (`@paraloncloud/mcp-rentals`) connected:
+With the ParalonCloud MCP server (`@paraloncloud/mcp`) connected:
 
 | Tool | Use |
 | --- | --- |

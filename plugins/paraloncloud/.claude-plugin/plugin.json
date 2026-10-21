@@ -1,6 +1,6 @@
 {
   "name": "paraloncloud",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Rent GPUs by the minute, run the GPU nodes you provide, and call open models on ParalonCloud: three skills and the ParalonCloud MCP server.",
   "author": {
     "name": "ParalonCloud",
