@@ -1,0 +1,13 @@
+{
+  "name": "paraloncloud",
+  "version": "1.0.0",
+  "description": "Rent GPUs by the minute, run the GPU nodes you provide, and call open models on ParalonCloud: three skills and the ParalonCloud MCP server.",
+  "author": {
+    "name": "ParalonCloud",
+    "url": "https://paraloncloud.com"
+  },
+  "homepage": "https://paraloncloud.com/docs/rental-api/mcp",
+  "repository": "https://github.com/ParalonCloud/paralon-skills",
+  "license": "MIT",
+  "keywords": ["gpu", "gpu-rental", "gpu-provider", "inference", "open-models", "jupyter", "mcp"]
+}

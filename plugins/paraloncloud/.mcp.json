@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "paraloncloud": {
+      "command": "npx",
+      "args": ["-y", "@paraloncloud/mcp-rentals@^1.1.0"],
+      "env": {
+        "PARALON_API_KEY": "${PARALON_API_KEY:-}"
+      }
+    }
+  }
+}

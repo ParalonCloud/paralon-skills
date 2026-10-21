@@ -1,0 +1,17 @@
+{
+  "name": "paraloncloud",
+  "description": "ParalonCloud for Claude Code: rent GPUs, run the GPU nodes you provide, and call open models, with skills and the ParalonCloud MCP server.",
+  "owner": {
+    "name": "ParalonCloud",
+    "url": "https://paraloncloud.com"
+  },
+  "plugins": [
+    {
+      "name": "paraloncloud",
+      "source": "./plugins/paraloncloud",
+      "description": "Skills for renting GPUs, managing your GPU nodes as a provider, and calling open models on ParalonCloud, plus the ParalonCloud MCP server.",
+      "category": "cloud",
+      "tags": ["gpu", "gpu-rental", "inference", "open-models", "mcp"]
+    }
+  ]
+}
