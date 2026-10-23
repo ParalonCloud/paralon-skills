@@ -28,7 +28,7 @@ curl -X DELETE https://paraloncloud.com/api/v1/rentals/<rental_id> -H "Authoriza
 
 `POST /rentals` body: `node_id` (required), `type` (`"jupyter"`, the only type), `hours` (1 to 720, optional auto-stop), `name` (optional label).
 
-`GET /gpus` item: `node_id`, `gpus[]` (`model`, `vram_mb`, `compute_cap`), `price_per_hour`, `list_price_per_hour`, `spot`, `verified`, `country`, `country_code`.
+`GET /gpus` item: `node_id`, `gpus[]` (`model`, `vram_mb`, `compute_cap`), `price_per_hour`, `list_price_per_hour`, `spot`, `verified`, `reserved_for_you` (a node its provider keeps for you or your organization; listed first, nobody else sees it), `country`, `country_code`.
 
 `GET /rentals/{id}`: `status` (`pending`, `running`, `stopped`, ...), `connection_pending`, `connection.access_url`, `price_per_hour`, `expires_at`, `spot`, `reclaim_at`.
 

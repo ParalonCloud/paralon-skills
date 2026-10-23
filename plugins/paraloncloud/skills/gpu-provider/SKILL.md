@@ -1,6 +1,6 @@
 ---
 name: gpu-provider
-description: Manage the GPU machines a provider rents out on ParalonCloud: check each node's state and health (online, rented, GPU load and temperature), add a node and get its install command, take a node off the market and back, set prices against the market, take back a spot node, and report earnings. Use when the user provides GPUs on ParalonCloud and asks about their nodes, machines, rigs, prices, availability, temperatures, or earnings.
+description: Manage the GPU machines a provider rents out on ParalonCloud: check each node's state and health (online, rented, GPU load and temperature), add a node and get its install command, take a node off the market and back, set prices against the market, keep a node private for chosen renters, take back a spot node, and report earnings. Use when the user provides GPUs on ParalonCloud and asks about their nodes, machines, rigs, prices, availability, temperatures, or earnings.
 ---
 
 # Run your GPU nodes on ParalonCloud
@@ -21,10 +21,12 @@ With the ParalonCloud MCP server (`@paraloncloud/mcp`) connected:
 | `set_node_price` | Price in USD per hour for the whole node, or `null` for the default |
 | `update_node` | Name, spot, availability and price in one call |
 | `reclaim_spot_node` | Take a spot node back; a spot rental on it **stops in two minutes** |
+| `get_node_access` | Who can rent the node: everyone, or only the people, email domains and organizations listed |
+| `set_node_access` | Set who can rent the node: the whole list at once, `[]` opens it to everyone |
 | `get_earnings` | Earnings by UTC day (rentals per node, inference per account) and the withdrawable balance |
 | `list_gpus` | What renters can rent right now, with prices: use it to compare the market |
 
-Without the MCP server, the same calls exist over HTTP at `https://paraloncloud.com/api/v1` (`GET/POST /nodes`, `GET/PATCH /nodes/{id}`, `GET /nodes/{id}/command`, `POST /nodes/{id}/reclaim`, `GET /earnings`). See `reference.md` in this folder.
+Without the MCP server, the same calls exist over HTTP at `https://paraloncloud.com/api/v1` (`GET/POST /nodes`, `GET/PATCH /nodes/{id}`, `GET /nodes/{id}/command`, `GET/PUT /nodes/{id}/access`, `POST /nodes/{id}/reclaim`, `GET /earnings`). See `reference.md` in this folder.
 
 The key must have the **My nodes** permission (Console → API keys). A `403 insufficient_scope` means it does not: tell the user to turn it on at https://paraloncloud.com/console. Payouts are not available through the API: requesting one or changing where it goes is done on the site.
 
@@ -51,13 +53,15 @@ The key must have the **My nodes** permission (Console → API keys). A `403 ins
 
 **"Set my price" / "am I priced right?"** Call `list_gpus` and look at what renters pay for the same GPU model, and `get_my_node` for the node's `price.default`, `price.min` and `price.max` (a custom price must sit between them: 50% to 300% of the default). Suggest a price with the reason, wait for a yes, then `set_node_price`. `null` returns to the default. A running rental keeps the price it started with. A spot node always rents at the spot price and takes no custom price. Never quote other providers' private data; `list_gpus` shows only public listings.
 
+**"Keep it for my company" / "only my team should use it" / "rent it only to Ana."** A node can be **private**: only the renters listed see it and can rent it, it is listed first for them, and nobody else sees it at all. Entries are people by email (`ana@company.com`), anyone at a company by domain (`company.com`), or an organization on ParalonCloud by its name. Before changing it, say plainly what it costs: **a private node earns from its listed renters' rentals only**. ParalonCloud places no inference or other work on it while it is free, so it stops earning in between. Get a clear yes, then `set_node_access` with the whole list (`get_node_access` first if it already has one, so nothing is dropped). An organization that does not exist, or a name two organizations share, is refused: ask the user for the exact name, or the organization ID from its Team settings. People and organizations added are told by email; a domain is not. `[]` opens the node to everyone again. A change applies from the next rental; a running one continues.
+
 **"I need my spot machine now."** Only for a spot node. Warn that the renter's rental stops two minutes later, get a clear yes, then `reclaim_spot_node`. Put it back with `set_node_available(true)`.
 
 **"How much did I earn?"** `get_earnings` (default 30 days; `days` up to 366). Report the total, the best days and the split by node, and the `earnings_balance` that can be withdrawn on the site. Rentals still running are added on the day they end; `running_rentals_billed_before_fee` is what they billed so far, before the fee.
 
 ## Rules
 
-- Confirm before any change: price, availability, spot, name, adding a node, and always before a reclaim.
+- Confirm before any change: price, availability, spot, name, who can rent it, adding a node, and always before a reclaim.
 - Never change a rented node in a way that affects the renter without a clear instruction.
 - Deleting a node and payouts are on the site only: https://paraloncloud.com/dashboard/nodes and https://paraloncloud.com/earnings
 

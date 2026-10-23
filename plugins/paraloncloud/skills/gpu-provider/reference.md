@@ -22,6 +22,11 @@ curl -X PATCH https://paraloncloud.com/api/v1/nodes/<node_id> \
   -H "Authorization: Bearer $PARALON_API_KEY" -H "Content-Type: application/json" \
   -d '{"available": false}'
 
+# Who can rent it: everyone ([]) or only these. The whole list at once; an org by name or ID
+curl https://paraloncloud.com/api/v1/nodes/<node_id>/access -H "Authorization: Bearer $PARALON_API_KEY"
+curl -X PUT https://paraloncloud.com/api/v1/nodes/<node_id>/access -H "Authorization: Bearer $PARALON_API_KEY" -H "Content-Type: application/json" \
+  -d '{"entries": [{"kind": "email", "value": "ana@company.com"}, {"kind": "domain", "value": "company.com"}, {"kind": "org", "value": "Acme Robotics"}]}'
+
 # Spot node: take it back (a spot rental stops two minutes later)
 curl -X POST https://paraloncloud.com/api/v1/nodes/<node_id>/reclaim -H "Authorization: Bearer $PARALON_API_KEY"
 
@@ -33,6 +38,8 @@ Node fields: `id`, `name`, `type`, `online`, `state` (`available`, `rented`, `pa
 
 Earnings: `days[]` (`day`, `rentals`, `inference`, `total`, `nodes[]`), `total`, `earnings_balance`, `running_rentals_billed_before_fee`.
 
-Errors: `400 invalid_request` (bad field, price outside min to max), `401 invalid_api_key`, `403 insufficient_scope`, `404 node_not_found`, `409 conflict` (spot change while rented, reclaim on a node that is not spot), `429 rate_limit_exceeded` (also: at most 20 new nodes an hour per key).
+Access answer: `node_id`, `private` (true when the list is not empty), `entries[]` (`kind`: `email`, `domain` or `org`; `value`; `name` for an org). A private node is seen and rented only by those listed, and takes no ParalonCloud workloads.
+
+Errors: `400 invalid_request` (bad field, price outside min to max), `400 invalid_entry` (an access entry that is not an email, a domain or an existing organization; the list is left as it was), `401 invalid_api_key`, `403 insufficient_scope`, `404 node_not_found`, `409 conflict` (spot change while rented, reclaim on a node that is not spot), `429 rate_limit_exceeded` (also: at most 20 new nodes an hour per key).
 
 Full docs: https://paraloncloud.com/docs/provider-api

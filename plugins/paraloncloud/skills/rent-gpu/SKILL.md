@@ -13,7 +13,7 @@ With the ParalonCloud MCP server (`@paraloncloud/mcp`) connected, use its tools:
 
 | Tool | Use |
 | --- | --- |
-| `list_gpus` | GPUs free right now: `node_id`, GPU model, `vram_mb`, `compute_cap`, `price_per_hour`, `spot`, `verified`, country |
+| `list_gpus` | GPUs free right now: `node_id`, GPU model, `vram_mb`, `compute_cap`, `price_per_hour`, `spot`, `verified`, `reserved_for_you`, country |
 | `get_balance` | The credit balance, in USD |
 | `create_rental` | Start a rental on a `node_id`; optional `hours` auto-stop. **Spends credits** |
 | `get_rental` | Status and the Jupyter link; it waits for startup itself, so call it once or twice, not in a loop |
@@ -27,7 +27,7 @@ The key must have the **GPU rentals** permission (Console → API keys). A `403 
 ## How to do it
 
 1. **Ask what they want to run, not which GPU.** The job decides the GPU: what software or model, how big, how long, whether it can be interrupted. If they already named a GPU, still check it fits the job.
-2. **Find GPUs that fit.** Call `list_gpus` and filter with the rules in "Choosing the GPU" below. Prefer `verified: true`. Two nodes with the same GPU differ by price, VRAM, country and `node_id`.
+2. **Find GPUs that fit.** Call `list_gpus` and filter with the rules in "Choosing the GPU" below. Prefer `verified: true`. Two nodes with the same GPU differ by price, VRAM, country and `node_id`. A node with `reserved_for_you: true` is one its provider keeps for this user or their organization; such nodes come first in the list: offer one when it fits the job, and say it is reserved for them.
 3. **Show the choice and the cost, and wait for a yes.** Name the GPU, VRAM, country, `price_per_hour`, and an estimate for the expected duration (price × hours). Check `get_balance` covers it: a rental needs at least one hour of balance to start, or the requested hours if `hours` is set.
 4. **Start it.** `create_rental` with the `node_id`. By default a rental is open-ended and bills until stopped: say so, and offer an `hours` cap (it stops itself even if everyone forgets). Pass `hours` when the user wants a limit or the job has a known length.
 5. **Get the link.** Call `get_rental` once; it returns when the Jupyter link (`connection.access_url`) is ready, usually 20 to 40 seconds after creating. Give the user the link. If it is still pending, call it once more.
