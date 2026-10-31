@@ -29,6 +29,13 @@ curl -X POST https://paraloncloud.com/api/v1/ssh-keys \
   -d "{\"public_key\": \"$(cat ~/.ssh/id_ed25519.pub)\", \"name\": \"laptop\"}"
 curl https://paraloncloud.com/api/v1/ssh-keys -H "Authorization: Bearer $PARALON_API_KEY"
 
+# Apps a rental can start with (ComfyUI), then rent a node whose /gpus "templates" has it
+curl -s https://paraloncloud.com/api/v1/templates -H "Authorization: Bearer $PARALON_API_KEY"
+curl -s -X POST https://paraloncloud.com/api/v1/rentals \
+  -H "Authorization: Bearer $PARALON_API_KEY" -H "Content-Type: application/json" \
+  -d '{"node_id": "<node_id>", "template": "comfyui"}'
+# Poll until app.state is "ready"; connection.app_url is its link (with its token)
+
 # Stop it and its billing (safe to repeat)
 curl -X DELETE https://paraloncloud.com/api/v1/rentals/<rental_id> -H "Authorization: Bearer $PARALON_API_KEY"
 ```
