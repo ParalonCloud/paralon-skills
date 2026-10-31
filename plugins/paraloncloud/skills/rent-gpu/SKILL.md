@@ -1,11 +1,11 @@
 ---
 name: rent-gpu
-description: Rent a cloud GPU on ParalonCloud by the minute and use it through JupyterLab: pick a GPU that fits the job, confirm the cost, start it, hand over the link, and stop it when done. Use when the user wants to rent, start or stop a GPU or GPU server, run something that needs a GPU (training, fine-tuning, running a model, image or video generation, rendering, CUDA work, data processing), or asks what GPU they need and what it would cost.
+description: Rent a cloud GPU on ParalonCloud by the minute and use it through JupyterLab or SSH: pick a GPU that fits the job, confirm the cost, start it, hand over the link or run commands on it over SSH, and stop it when done. Use when the user wants to rent, start or stop a GPU or GPU server, run something that needs a GPU (training, fine-tuning, running a model, image or video generation, rendering, CUDA work, data processing), or asks what GPU they need and what it would cost.
 ---
 
 # Rent a GPU on ParalonCloud
 
-ParalonCloud rents whole GPU machines by the minute. A rental is a container with the machine's GPUs, reached through **JupyterLab** in the browser (notebooks, a terminal, a file browser). It bills per minute from the account's credit balance until it is stopped.
+ParalonCloud rents whole GPU machines by the minute. A rental is a container with the machine's GPUs, reached one of two ways, chosen at start: **JupyterLab** in the browser (notebooks, a terminal, a file browser), or **SSH** (a root shell for commands, scp/rsync, VS Code Remote-SSH). It bills per minute from the account's credit balance until it is stopped.
 
 ## Tools
 
@@ -13,14 +13,15 @@ With the ParalonCloud MCP server (`@paraloncloud/mcp`) connected, use its tools:
 
 | Tool | Use |
 | --- | --- |
-| `list_gpus` | GPUs free right now: `node_id`, GPU model, `vram_mb`, `compute_cap`, `price_per_hour`, `spot`, `verified`, `reserved_for_you`, country |
+| `list_gpus` | GPUs free right now: `node_id`, GPU model, `vram_mb`, `compute_cap`, `price_per_hour`, `spot`, `verified`, `reserved_for_you`, `ssh` (can start with SSH), country |
 | `get_balance` | The credit balance, in USD |
-| `create_rental` | Start a rental on a `node_id`; optional `hours` auto-stop. **Spends credits** |
-| `get_rental` | Status and the Jupyter link; it waits for startup itself, so call it once or twice, not in a loop |
+| `create_rental` | Start a rental on a `node_id`, `type` `jupyter` (default) or `ssh`; optional `hours` auto-stop. **Spends credits** |
+| `get_rental` | Status and the Jupyter link or the SSH command; it waits for startup itself, so call it once or twice, not in a loop |
 | `list_rentals` | Active rentals (`status: "all"` for history) |
 | `destroy_rental` | Stop a rental and its billing; safe to call twice |
+| `list_ssh_keys` / `add_ssh_key` / `delete_ssh_key` | The SSH public keys an SSH rental installs (all of them) |
 
-Without the MCP server, the same calls exist over HTTP at `https://paraloncloud.com/api/v1` (`GET /gpus`, `GET /balance`, `POST /rentals`, `GET /rentals/{id}`, `GET /rentals`, `DELETE /rentals/{id}`) with `Authorization: Bearer <key>`. See `reference.md` in this folder.
+Without the MCP server, the same calls exist over HTTP at `https://paraloncloud.com/api/v1` (`GET /gpus`, `GET /balance`, `POST /rentals`, `GET /rentals/{id}`, `GET /rentals`, `DELETE /rentals/{id}`, `GET/POST/DELETE /ssh-keys`) with `Authorization: Bearer <key>`. See `reference.md` in this folder.
 
 The key must have the **GPU rentals** permission (Console → API keys). A `403 insufficient_scope` means it does not: tell the user to turn it on at https://paraloncloud.com/console.
 
@@ -29,10 +30,11 @@ The key must have the **GPU rentals** permission (Console → API keys). A `403 
 1. **Ask what they want to run, not which GPU.** The job decides the GPU: what software or model, how big, how long, whether it can be interrupted. If they already named a GPU, still check it fits the job.
 2. **Find GPUs that fit.** Call `list_gpus` and filter with the rules in "Choosing the GPU" below. Prefer `verified: true`. Two nodes with the same GPU differ by price, VRAM, country and `node_id`. A node with `reserved_for_you: true` is one its provider keeps for this user or their organization; such nodes come first in the list: offer one when it fits the job, and say it is reserved for them.
 3. **Show the choice and the cost, and wait for a yes.** Name the GPU, VRAM, country, `price_per_hour`, and an estimate for the expected duration (price × hours). Check `get_balance` covers it: a rental needs at least one hour of balance to start, or the requested hours if `hours` is set.
-4. **Start it.** `create_rental` with the `node_id`. By default a rental is open-ended and bills until stopped: say so, and offer an `hours` cap (it stops itself even if everyone forgets). Pass `hours` when the user wants a limit or the job has a known length.
-5. **Get the link.** Call `get_rental` once; it returns when the Jupyter link (`connection.access_url`) is ready, usually 20 to 40 seconds after creating. Give the user the link. If it is still pending, call it once more.
-6. **Help them use it** (see "Working on the machine").
-7. **Stop it when the work is done.** `destroy_rental` stops the billing. Before stopping, remind the user that **everything on the machine is deleted when the rental ends**: download results first. If you started it for a task you finished, stop it yourself after the user has their results.
+4. **Pick how to connect.** JupyterLab when the user will work in the browser. SSH when you (the agent) will run commands on the machine, or the user wants their terminal or editor; it needs a node with `ssh: true` and a saved key (see "Over SSH").
+5. **Start it.** `create_rental` with the `node_id`, and `type: "ssh"` for SSH. By default a rental is open-ended and bills until stopped: say so, and offer an `hours` cap (it stops itself even if everyone forgets). Pass `hours` when the user wants a limit or the job has a known length.
+6. **Get the connection.** Call `get_rental` once; it returns when the rental answers, usually 20 to 40 seconds after creating: `connection.access_url` (the Jupyter link) or `connection.ssh_command`. Give it to the user, or use it. If it is still pending, call it once more.
+7. **Help them use it** (see "Working on the machine").
+8. **Stop it when the work is done.** `destroy_rental` stops the billing. Before stopping, remind the user that **everything on the machine is deleted when the rental ends**: download results first. If you started it for a task you finished, stop it yourself after the user has their results.
 
 Never start a rental without the user's confirmation of GPU and price. Never leave a rental running that you started for a finished task.
 
@@ -54,13 +56,21 @@ Match the job, then take the cheapest verified node that fits.
 
 When nothing free fits, say so and offer the closest option (a smaller precision, a smaller model, two GPUs in one node, or waiting), rather than renting something that will not work.
 
+## Over SSH
+
+- Keys: an SSH rental installs every public key saved on the account (`list_ssh_keys`). A key added after the rental started is not on it.
+- To run commands yourself, make a key for the session and save its public half: `ssh-keygen -t ed25519 -N '' -f ~/.ssh/paralon_ed25519`, then `add_ssh_key` with the line of `~/.ssh/paralon_ed25519.pub`. Never send a private key.
+- Connecting needs `cloudflared` on the computer that holds the private key (macOS `brew install cloudflared`, Windows `winget install --id Cloudflare.cloudflared`, Linux: the release binary from github.com/cloudflare/cloudflared). Then run `connection.ssh_command`, adding `-i ~/.ssh/paralon_ed25519` when the key is not a default one, and `-o StrictHostKeyChecking=accept-new` for a non-interactive first connection.
+- One-off commands: `ssh … root@<host> 'nvidia-smi'`. Files: `scp` and `rsync -e 'ssh -o ProxyCommand="cloudflared access ssh --hostname %h"'`.
+- `409 ssh_not_available`: the node cannot take SSH; pick one with `ssh: true`. `400 no_ssh_key`: save a key first.
+
 ## Working on the machine
 
-- Open the link: JupyterLab with Python, a terminal and `nvidia-smi`. Install with `pip`, `conda` or `apt`.
-- **No Docker inside the rental** (it is an unprivileged container), and only Jupyter is reachable from outside: no SSH, no other open ports.
+- JupyterLab or the SSH shell: Python, `nvidia-smi`, root. Install with `pip`, `conda` or `apt`. The working folder is `/workspace`.
+- **No Docker inside the rental** (it is an unprivileged container), and only the chosen access is reachable from outside: JupyterLab or SSH, no other open ports.
 - Disk is the machine's free disk; large models and datasets must fit.
 - Processes keep running if the browser closes. The instance can restart, which stops processes but keeps files: checkpoint long jobs.
-- Upload data through the Jupyter file browser, or download it on the machine (`wget`, `huggingface-cli`, `git clone`). Download results through the file browser before stopping.
+- Upload data through the Jupyter file browser or `scp`/`rsync` over SSH, or download it on the machine (`wget`, `huggingface-cli`, `git clone`). Copy results off before stopping.
 - On a spot rental, `get_rental` shows `reclaim_at` when the owner takes the machine back: save work immediately, the rental stops at that time.
 
 ## Costs and safety
