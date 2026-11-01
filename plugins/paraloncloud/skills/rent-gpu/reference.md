@@ -29,7 +29,7 @@ curl -X POST https://paraloncloud.com/api/v1/ssh-keys \
   -d "{\"public_key\": \"$(cat ~/.ssh/id_ed25519.pub)\", \"name\": \"laptop\"}"
 curl https://paraloncloud.com/api/v1/ssh-keys -H "Authorization: Bearer $PARALON_API_KEY"
 
-# Apps a rental can start with (ComfyUI, Open WebUI with Ollama), then rent a node whose /gpus "templates" has it
+# Apps a rental can start with (ComfyUI, Open WebUI with Ollama, Unsloth Studio), then rent a node whose /gpus "templates" has it
 curl -s https://paraloncloud.com/api/v1/templates -H "Authorization: Bearer $PARALON_API_KEY"
 curl -s -X POST https://paraloncloud.com/api/v1/rentals \
   -H "Authorization: Bearer $PARALON_API_KEY" -H "Content-Type: application/json" \
