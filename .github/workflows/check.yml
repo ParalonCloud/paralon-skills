@@ -1,0 +1,39 @@
+# Every pull request and push to main: the plugin's JSON files parse, every
+# skill has a name and a description, and the MCP version the plugin pins is
+# published on npm (skills go out only after the MCP they pin is there).
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: JSON files parse
+        run: |
+          for f in .claude-plugin/marketplace.json plugins/*/.claude-plugin/plugin.json plugins/*/.mcp.json; do
+            node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" && echo "ok $f"
+          done
+      - name: Every skill has a name and a description
+        run: |
+          for f in plugins/*/skills/*/SKILL.md; do
+            head -20 "$f" | grep -q '^name: ' && head -20 "$f" | grep -q '^description: ' || { echo "missing name or description: $f"; exit 1; }
+            echo "ok $f"
+          done
+      - name: The pinned MCP version is on npm
+        run: |
+          v=$(node -p "require('./plugins/paraloncloud/.mcp.json').mcpServers.paraloncloud.args.find(a=>a.startsWith('@paraloncloud/mcp@')).split('@').pop().replace(/^[\^~]/,'')")
+          echo "pinned: $v"
+          npm view "@paraloncloud/mcp@$v" version

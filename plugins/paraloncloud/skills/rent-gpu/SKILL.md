@@ -16,7 +16,7 @@ With the ParalonCloud MCP server (`@paraloncloud/mcp`) connected, use its tools:
 | `list_gpus` | GPUs free right now: `node_id`, GPU model, `vram_mb`, `compute_cap`, `price_per_hour`, `spot`, `verified`, `reserved_for_you`, `ssh` (can start with SSH), `templates` (apps it can start with), country |
 | `list_templates` | Apps a rental can start with (`slug`, `version`, `min_vram_gb`, `min_disk_gb`): today `comfyui`, `openwebui` and `unsloth` |
 | `get_balance` | The credit balance, in USD |
-| `create_rental` | Start a rental on a `node_id`, `type` `jupyter` (default) or `ssh`; optional `template` (an app slug) and `hours` auto-stop. **Spends credits** |
+| `create_rental` | Start a rental on a `node_id`, `type` `jupyter` (default) or `ssh`; optional `template` (an app slug), `hours` auto-stop and `max_price_per_hour` (the price you showed). **Spends credits** |
 | `get_rental` | Status and the Jupyter link or the SSH command, and with a template `app` (its state) and `connection.app_url` (its link); it waits for startup itself, so call it once or twice, not in a loop |
 | `list_rentals` | Active rentals (`status: "all"` for history) |
 | `destroy_rental` | Stop a rental and its billing; safe to call twice |
@@ -33,7 +33,7 @@ The key must have the **GPU rentals** permission (Console → API keys). A `403 
 3. **Show the choice and the cost, and wait for a yes.** Name the GPU, VRAM, country, `price_per_hour`, and an estimate for the expected duration (price × hours). Check `get_balance` covers it: a rental needs at least one hour of balance to start, or the requested hours if `hours` is set.
 4. **Offer an app when one fits.** If the job is image or video generation with ComfyUI-style workflows (Flux, SDXL, Wan), or the user names ComfyUI, call `list_templates` and offer to start with `template: "comfyui"`: it comes installed and running, with its own link, so nobody sets it up. Pick a node whose `templates` contains it. If the user wants to chat with an open model in the browser (a private ChatGPT on a GPU, Llama, Qwen, Gemma, DeepSeek, Mistral), or names Open WebUI or Ollama, offer `template: "openwebui"`: Open WebUI with Ollama, from 8 GB of VRAM. If the user wants to fine-tune or train a model on their own data (LoRA, QLoRA, a custom model), or names Unsloth, offer `template: "unsloth"`: Unsloth Studio, from 12 GB of VRAM (QLoRA on Llama 3.1 8B used 6.3 GB on a 4090). Otherwise the clean machine (no template) is the default.
 5. **Pick how to connect.** JupyterLab when the user will work in the browser. SSH when you (the agent) will run commands on the machine, or the user wants their terminal or editor; it needs a node with `ssh: true` and a saved key (see "Over SSH").
-6. **Start it.** `create_rental` with the `node_id`, `type: "ssh"` for SSH, and `template` for an app. By default a rental is open-ended and bills until stopped: say so, and offer an `hours` cap (it stops itself even if everyone forgets). Pass `hours` when the user wants a limit or the job has a known length.
+6. **Start it.** `create_rental` with the `node_id`, `max_price_per_hour` set to the `price_per_hour` you showed the user, `type: "ssh"` for SSH, and `template` for an app. If it answers `price_changed`, nothing was started or charged: tell the user the new price and start again with it only after a new yes. By default a rental is open-ended and bills until stopped: say so, and offer an `hours` cap (it stops itself even if everyone forgets). Pass `hours` when the user wants a limit or the job has a known length.
 7. **Get the connection.** Call `get_rental` once; it returns when the rental answers, usually 20 to 40 seconds after creating: `connection.access_url` (the Jupyter link) or `connection.ssh_command`. Give it to the user, or use it. If it is still pending, call it once more. With a template, the app comes up a minute or two after the machine: call `get_rental` again until `app.state` is `ready`, then give `connection.app_url` (see "With an app").
 8. **Help them use it** (see "Working on the machine").
 9. **Stop it when the work is done.** `destroy_rental` stops the billing. Before stopping, remind the user that **everything on the machine is deleted when the rental ends**: download results first. If you started it for a task you finished, stop it yourself after the user has their results.
@@ -91,6 +91,7 @@ When nothing free fits, say so and offer the closest option (a smaller precision
 
 - Billing is per minute while the rental runs, at the price locked when it started.
 - `create_rental` sends an idempotency key, so a retried call never starts a second GPU.
+- With `max_price_per_hour`, a rental never starts above the price the user agreed to: a higher price is refused with `409 price_changed` and the new price.
 - The key's "at most N rentals at once" limit caps how many it can hold.
 - Errors: `402 insufficient_credits` (top up at https://paraloncloud.com/add-credits), `409 node_rented` / `node_offline` / `node_not_ready` (pick another node from a fresh `list_gpus`), `409 rental_limit_reached` (the key's cap; stop one or raise the cap in the Console).
 
